@@ -1,15 +1,36 @@
 "use client"
 
-import Layout from "@/components/main-layout";
-import React from "react";
+import {Geist, Geist_Mono} from "next/font/google";
+import "./globals.css";
+import {ThemeProvider} from "@/components/theme-provider";
+import {ShellProvider} from "@/components/shell-provider";
 
-export default function () {
-    const inputRef = React.useRef<HTMLInputElement>(null);
+const geistSans = Geist({
+    variable: "--font-geist-sans",
+    subsets: ["latin"],
+});
 
-    const onClickAnywhere = () => {
-        inputRef.current?.focus();
-    };
+const geistMono = Geist_Mono({
+    variable: "--font-geist-mono",
+    subsets: ["latin"],
+});
 
-    return <Layout onClick={onClickAnywhere}>
-    </Layout>
+export default function RootLayout({
+                                       children,
+                                   }: Readonly<{
+    children: React.ReactNode;
+}>) {
+    return (
+        <html lang="en">
+        <body
+            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+        <ThemeProvider>
+            <ShellProvider>
+                {children}
+            </ShellProvider>
+        </ThemeProvider>
+        </body>
+        </html>
+    );
 }
