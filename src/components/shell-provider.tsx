@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useEffect} from 'react';
+import React, {useCallback} from 'react';
 import {useTheme} from "@/components/theme-provider";
 import {cmdTheme} from "@/lib/cmd/theme";
 import {History} from "@/lib/types";
@@ -10,7 +10,7 @@ interface ShellContextType {
     command: string;
     lastCommandIndex: number;
 
-    setHistory: (output: string) => void;
+    setHistory: (output: string, commandToStore: string) => void;
     setCommand: (command: string) => void;
     setLastCommandIndex: (index: number) => void;
     execute: (command: string) => Promise<void>;
@@ -27,62 +27,49 @@ interface ShellProviderProps {
 export const useShell = () => React.useContext(ShellContext);
 
 export const ShellProvider: React.FC<ShellProviderProps> = ({children}) => {
-    const [init, setInit] = React.useState(true);
     const [history, _setHistory] = React.useState<History[]>([]);
     const [command, _setCommand] = React.useState<string>('');
     const [lastCommandIndex, _setLastCommandIndex] = React.useState<number>(0);
     const {theme, setTheme} = useTheme();
 
-    useEffect(() => {
-        // setCommand('banner'); Intro command
-    }, []);
-
-    useEffect(() => {
-        if (!init) {
-            execute();
-        }
-    }, [command, init]);
-
-    const setHistory = (output: string) => {
-        _setHistory([
-            ...history,
+    const setHistory = useCallback((output: string, commandToStore: string) => {
+        _setHistory(prev => [
+            ...prev,
             {
-                id: history.length,
+                id: prev.length,
                 date: new Date(),
-                command: command.split(' ').slice(1).join(' '),
+                command: commandToStore,
                 output,
             },
         ]);
-    };
+    }, []);
 
-    const setCommand = (command: string) => {
-        _setCommand([Date.now(), command].join(' '));
+    const setCommand = useCallback((command: string) => {
+        _setCommand(command);
+    }, []);
 
-        setInit(false);
-    };
-
-    const clearHistory = () => {
+    const clearHistory = useCallback(() => {
         _setHistory([]);
-    };
+    }, []);
 
-    const setLastCommandIndex = (index: number) => {
+    const setLastCommandIndex = useCallback((index: number) => {
         _setLastCommandIndex(index);
-    };
+    }, []);
 
-    const execute = async () => {
-        const [cmd, ...args] = command.split(' ').slice(1);
+    const execute = useCallback(async (commandToExecute: string) => {
+        const [cmd, ...args] = commandToExecute.split(' ');
 
         switch (cmd) {
             case 'theme':
                 const output = await cmdTheme(args, setTheme);
-                setHistory(output);
+                setHistory(output, commandToExecute);
                 break;
             default: {
-                setHistory('');
+                setHistory('', commandToExecute);
                 break
             }
         }
-    };
+    }, [setTheme, setHistory]);
 
     return (
         <ShellContext.Provider
